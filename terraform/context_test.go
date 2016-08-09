@@ -1,6 +1,7 @@
 package terraform
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -172,7 +173,17 @@ func testDiffFn(
 		if reflect.DeepEqual(v, []interface{}{}) {
 			attrDiff.New = ""
 		} else {
-			attrDiff.New = v.(string)
+			if s, ok := v.(string); ok {
+				attrDiff.New = s
+			} else {
+				// we need to generate diff strings because the tests work by
+				// comparing the plan output. Rather than walking the
+				js, err := json.Marshal(v)
+				if err != nil {
+					return nil, err
+				}
+				attrDiff.New = string(js)
+			}
 		}
 
 		if k == "require_new" {
